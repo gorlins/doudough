@@ -1,0 +1,17 @@
+[project]
+name = "doudough"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Scott Gorlin", email = "scottgorlin@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+doudough = "doudough:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
