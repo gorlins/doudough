@@ -1,5 +1,5 @@
 import dash_mantine_components as dmc
-from dash import page_registry, callback, Input, Output, State
+from dash import page_registry, callback, Input, Output, State, callback_context, ALL
 from dash_iconify import DashIconify
 
 # from .controls import default_file
@@ -35,7 +35,7 @@ def layout(**kwargs):
                 dmc.NavLink(
                     label=page["name"],
                     href=page["relative_path"],  # + query,
-                    # id={"type": "navlink", "index": page["relative_path"]},
+                    id={"type": "navlink", "index": page["relative_path"]},
                     refresh=False,
                     leftSection=(
                         DashIconify(icon=page["icon"]) if "icon" in page else None
@@ -58,13 +58,12 @@ def toggle_navbar(opened, navbar):
     return navbar
 
 
-#
-# # Callback (using the dcc.location provided by Dash Pages)
-# @callback(
-#     Output({"type": "navlink", "index": ALL}, "active"),
-#     Input("_pages_location", "pathname"),
-# )
-# def update_navlinks(pathname):
-#     return [
-#         control["id"]["index"] == pathname for control in callback_context.outputs_list
-#     ]
+# Callback (using the dcc.location provided by Dash Pages)
+@callback(
+    Output({"type": "navlink", "index": ALL}, "active"),
+    Input("_pages_location", "pathname"),
+)
+def update_navlinks(pathname):
+    return [
+        control["id"]["index"] == pathname for control in callback_context.outputs_list
+    ]
