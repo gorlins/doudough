@@ -1,5 +1,6 @@
 """Doudough app shell""" ""
 import importlib
+import os
 import os.path
 from pathlib import Path
 from typing import Iterable
@@ -69,6 +70,7 @@ def create_app(
 app = Dash(
     external_stylesheets=dmc.styles.ALL,
     use_pages=True,
+    assets_folder=os.path.join(os.path.dirname(__file__), "assets"),
     pages_folder="",
     # server=server,
     # suppress_callback_exceptions=True,  # This breaks ledger loading??
