@@ -47,8 +47,9 @@ pipx install -e ./doudough
 
 ## What's in a name?
 
-"Dòu" ([豆](https://en.wiktionary.org/wiki/%E8%B1%86#Chinese)) is Chinese for 'bean.'  In Chinese, diminutives are created by repeating
-the word - 'dòudòu' means 'little beans,' like peas, or - in my family in particular -
+"Dòu" (豆) is [Mandarin Chinese for 'bean.'](https://en.wiktionary.org/wiki/%E8%B1%86#Chinese)
+In Chinese, diminutives or cutesy terms are created by repeating
+the word - 'dòu dòu' means 'little beans,' like peas, or - with my children in particular -
 edamame.
 
 *(The first name for this project was "edamoney," which doesn't have the same ring)*
