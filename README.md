@@ -1,6 +1,8 @@
 # doudough
 *Sounds like 'dough-dough', spoken quickly!*
 
+![](img/doudou.jpg)
+
 Doudough is an alternative web interface for the double-entry bookkeeping
 software [Beancount](https://beancount.github.io/docs/).  It replaces or supplements [fava](https://beancount.github.io/fava/)
 as a frontend, and currently leverages fava backend logic wherever possible.
@@ -40,13 +42,13 @@ uv tool install ...
 
 If you want to edit and
 ```bash
-pipx install -e ./pidoudough
+pipx install -e ./doudough
 ```
 
 ## What's in a name?
 
-"Dou" (豆) is Chinese for 'bean.'  In Chinese, diminutives are created by repeating
-the word - 'doudou' means 'little beans,' like peas, or - in my family in particular -
+"Dòu" ([豆](https://en.wiktionary.org/wiki/%E8%B1%86#Chinese)) is Chinese for 'bean.'  In Chinese, diminutives are created by repeating
+the word - 'dòudòu' means 'little beans,' like peas, or - in my family in particular -
 edamame.
 
 *(The first name for this project was "edamoney," which doesn't have the same ring)*
