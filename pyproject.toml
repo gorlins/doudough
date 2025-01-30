@@ -7,7 +7,18 @@ authors = [
     { name = "Scott Gorlin", email = "scottgorlin@gmail.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "beancount>=2.3.6",
+    "click>=8.1.8",
+    "dash>=2.18.2",
+    "dash-ag-grid>=31.3.0",
+    "dash-iconify>=0.1.2",
+    "dash-mantine-components>=0.15.2",
+    "fava>=1.30",
+    "orjson>=3.10.15",
+    "pandas>=2.2.3",
+    "plotly[express]>=6.0.0",
+]
 
 [project.scripts]
 doudough = "doudough:main"
@@ -15,3 +26,9 @@ doudough = "doudough:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "dash[testing]>=2.18.2",
+    "pytest>=8.3.4",
+]
