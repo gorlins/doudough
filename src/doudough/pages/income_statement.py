@@ -1,7 +1,6 @@
 import dash_mantine_components as dmc
 from dash import dash_table, dcc
 from fava.util.date import Interval
-from plotly import express as px
 
 from .app_shell.controls import (
     OPERATING_CURRENCY,
@@ -14,6 +13,7 @@ from .app_shell.controls import (
     Control,
 )
 from .utils import interval_plot, treeify_accounts, yield_tree_nodes
+from ..charting import create_breakdown_chart
 
 INCOME_GRAPH = GraphHelper("income_timeline")
 GRAPH_TOGGLE = Control("graph_toggle", value="net")
@@ -156,82 +156,13 @@ def update_chart(currency, interval, fk):
 )
 def update_breakdowns(currency, fk):
 
-    return tuple(
-        [create_breakdown_chart(t, currency, **fk) for t in ["income", "expenses"]]
-    )
+    roots = {"Income": {"invert": -1, "scale": "Blues"}, "Expenses": {"scale": "Reds"}}
+    figs = [
+        create_breakdown_chart(get_hierarchy_data(currency, root, **fk), **props)
+        for root, props in roots.items()
+    ]
 
-
-def create_breakdown_chart(graph_type, currency, **fk):
-
-    good = "Blues"
-    bad = "Reds"
-    invert = 1
-    match graph_type:
-        case "assets":
-            scale = good
-        case "liabilities":
-            scale = bad
-            invert = -1
-        case "income":
-            invert = -1
-            scale = good
-        case "expenses":
-            scale = bad
-        case "equity":
-            scale = "Purples"
-            invert = -1
-        case _:
-            raise ValueError()
-
-    root_account = graph_type.capitalize()
-    data = get_hierarchy_data(currency, root_account, **fk)
-    lookup = {d["account"]: invert * d["total"] for d in data}
-    sd = []
-
-    mx = max(lookup.values())
-    assert mx > 0
-    min_display = mx / 50
-    pruned = []
-
-    for account, value in lookup.items():
-        if any(account.startswith(p) for p in pruned):
-            # This branch is pruned - do not include any children
-            continue
-        if value < min_display:
-            # Ignore negative nodes and hide really small ones too
-            # print("Below min:", account, value)
-            pruned.append(account)
-            continue
-        splits = account.split(":")
-        parent = ":".join(splits[:-1])
-        # if len(splits) > 3:
-        #     print(account, value)
-        if parent and value < lookup[parent] / 10:
-            pruned.append(account)
-            continue
-
-        sd.append(
-            {
-                "parent": parent,
-                "id": account,
-                "name": splits[-1],
-                "value": float(value),
-            }
-        )
-    fig = px.icicle(
-        sd,
-        names="name",
-        ids="id",
-        parents="parent",
-        values="value",
-        branchvalues="total",
-        color="value",
-        range_color=(0, mx),
-        # color_continuous_midpoint=0,
-        color_continuous_scale=scale,
-    )
-
-    return fig
+    return tuple(figs)
 
 
 @filtered_callback(INCOME_TABLE.output, OPERATING_CURRENCY.input)

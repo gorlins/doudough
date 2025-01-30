@@ -13,7 +13,8 @@ from .app_shell.controls import (
     get_filtered_ledger,
     filtered_callback,
 )
-from .income_statement import _update_table, create_breakdown_chart
+from .income_statement import _update_table, get_hierarchy_data
+from ..charting import create_breakdown_chart
 
 ASSETS_TABLE = DataHelper("assets_table")
 LIABILITIES_TABLE = DataHelper("liabilities_table")
@@ -43,9 +44,9 @@ for table in [ASSETS_TABLE, LIABILITIES_TABLE]:
     )
 views = [
     {"value": "net", "label": "Net Worth"},
-    {"value": "assets", "label": "Assets"},
-    {"value": "liabilities", "label": "Liabilities"},
-    {"value": "equity", "label": "Equity"},
+    {"value": "assets", "label": "Assets", "invert": 1, "scale": "Blues"},
+    {"value": "liabilities", "label": "Liabilities", "invert": -1, "scale": "Reds"},
+    {"value": "equity", "label": "Equity", "scale": "Purples", "invert": -1},
 ]
 grid = dmc.SimpleGrid(cols=2, children=children)
 layout = [
@@ -76,7 +77,14 @@ layout = [
 )
 def update_breakdowns(currency, fk):
     return tuple(
-        [create_breakdown_chart(v["value"], currency, **fk) for v in views[1:]]
+        [
+            create_breakdown_chart(
+                get_hierarchy_data(currency, v["value"].capitalize(), **fk),
+                scale=v["scale"],
+                invert=v["invert"],
+            )
+            for v in views[1:]
+        ]
     )
 
 
@@ -103,6 +111,7 @@ def update_nw_chart(currency, interval, fk):
         x="date",
         y="net_worth",
     )
+    fig.update_layout(xaxis_title=None, yaxis_title=None)
 
     return fig
 
