@@ -1,5 +1,6 @@
 import dash_mantine_components as dmc
-from dash import dcc, callback
+from beancount.core.data import Transaction
+from dash import dcc, callback, Output
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 from fava.application import _slug
@@ -15,6 +16,7 @@ from .controls import (
     FILTER,
     get_loader,
     LEDGER_SLUG,
+    get_ledger,
 )
 
 # with open(os.path.join(os.path.dirname(__file__), "doudou.jpg"), "rb") as _f:
@@ -160,8 +162,9 @@ layout = dmc.AppShellHeader(
                 size=SIZE,
             ),
             OPERATING_CURRENCY.make_widget(
-                dmc.TextInput,
+                dmc.Select,
                 w=100,
+                clearable=False,
                 placeholder="Operating Currency",
                 leftSection=DashIconify(icon="material-symbols:currency-exchange"),
                 **_FILTER_KWARGS,
@@ -179,29 +182,32 @@ layout = dmc.AppShellHeader(
     )
 )
 
-#
-# # @callback()
-# @callback(
-#     Output(ACCOUNT.id, "data"),
-#     Output(FILTER.id, "data"),
-#     LEDGER_SLUG.input,
-#     # LOADED.input,
-# )
-# def update_autocompletes(ledger_slug):
-#     ledger = get_ledger(ledger_slug)
-#     tags = set()
-#     for entry in ledger.all_entries:
-#         if isinstance(entry, Transaction):
-#             tags.update(["#" + t for t in entry.tags])
-#             tags.update(["^" + l for l in entry.links])
-#             if entry.payee:
-#                 tags.update(['payee:"{}"'.format(entry.payee)])
-#     # return [
-#     #     {"value": acct, "label": label_account(acct)}
-#     #     for acct in sorted(ledger.accounts.keys())
-#     # ], sorted(tags)
-#
-#     return sorted(ledger.accounts.keys()), sorted(tags)
+
+@callback(
+    OPERATING_CURRENCY.output,
+    Output(OPERATING_CURRENCY.id, "data"),
+    Output(ACCOUNT.id, "data"),
+    Output(FILTER.id, "data"),
+    LEDGER_SLUG.input,
+)
+def update_autocompletes(ledger_slug):
+    ledger = get_ledger(ledger_slug)
+    ops = ledger.options["operating_currency"]
+    if isinstance(ops, str):
+        ops = [ops]
+    tags = set()
+    for entry in ledger.all_entries:
+        if isinstance(entry, Transaction):
+            tags.update(["#" + t for t in entry.tags])
+            tags.update(["^" + l for l in entry.links])
+            if entry.payee:
+                tags.update(['payee:"{}"'.format(entry.payee)])
+    # return [
+    #     {"value": acct, "label": label_account(acct)}
+    #     for acct in sorted(ledger.accounts.keys())
+    # ], sorted(tags)
+
+    return ops[0], ops, sorted(ledger.accounts.keys()), sorted(tags)
 
 
 # @callback(SEARCH.output, TIME_SELECTOR.output, SEARCH.input, TIME_SELECTOR.input)
@@ -259,7 +265,7 @@ layout = dmc.AppShellHeader(
     LEDGER_SLUG.input,
     UPDATE_INTERVAL.input,
 )
-def update_slugs(current_slug, interval):
+def first_load_metadata(current_slug, interval):
 
     loader = get_loader()
     if current_slug in loader.ledgers_by_slug:
