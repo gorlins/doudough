@@ -17,7 +17,7 @@ from flask import Flask
 from flask_babel import Babel
 
 from .pages import home
-from .pages.app_shell import header, navbar, footer, aside
+from .pages.app_shell import header, navbar, aside
 
 # Required for dash_mantine_components
 _dash_renderer._set_react_version("18.2.0")
@@ -121,13 +121,13 @@ shell = dmc.AppShell(
         navbar.layout(),  # Create after pages have registered
         dmc.AppShellMain(page_container),
         aside.layout,
-        footer.layout,
+        # footer.layout,
     ],
     header={"height": 40},
-    footer={
-        "height": 40,
-        # "collapsed": True,
-    },
+    # footer={
+    #     "height": 40,
+    #     # "collapsed": True,
+    # },
     navbar={
         "width": 220,
         "breakpoint": "sm",

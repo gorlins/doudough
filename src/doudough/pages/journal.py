@@ -265,6 +265,5 @@ def _to_datagrid(t: D.Directive) -> dict:
 
 @filtered_callback(Output(grid, "rowData"))
 def update_journal(**fk):
-    print(fk)
     ledger, filtered = get_filtered_ledger(**fk)
     return to_datagrid(filtered.entries)

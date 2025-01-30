@@ -1,14 +1,20 @@
 import dash_mantine_components as dmc
-from dash import dcc
+from dash import dcc, callback
+from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
+from fava.application import _slug
 from fava.util.date import Interval
 
 from .controls import (
     TIME_SELECTOR,
+    UPDATE_INTERVAL,
+    LOADED,
     INTERVAL,
     ACCOUNT,
     OPERATING_CURRENCY,
     FILTER,
+    get_loader,
+    LEDGER_SLUG,
 )
 
 # with open(os.path.join(os.path.dirname(__file__), "doudou.jpg"), "rb") as _f:
@@ -29,6 +35,7 @@ _FILTER_KWARGS = dict(
     size=SIZE,
 )
 
+LINE_SIZE = 2
 
 layout = dmc.AppShellHeader(
     dmc.Group(
@@ -37,6 +44,7 @@ layout = dmc.AppShellHeader(
                 id="burger",
                 size=SIZE,
                 color="green",
+                lineSize=LINE_SIZE,
                 # hiddenFrom="sm",
                 opened=True,
             ),
@@ -46,11 +54,19 @@ layout = dmc.AppShellHeader(
             #     size=SIZE,
             #     # h=40,
             # ),
-            dmc.Title(
-                "DouDough",  # TODO: use title
-                c="green",
+            UPDATE_INTERVAL.make_widget(dcc.Interval),
+            LEDGER_SLUG.make_widget(
+                dmc.Select,
                 size=SIZE,
+                placeholder="Ledger File",
+                clearable=False,
+                leftSection=DashIconify(icon="material-symbols:edit-document"),
             ),
+            # dmc.Title(
+            #     "DouDough",  # TODO: use title
+            #     c="green",
+            #     size=SIZE,
+            # ),
             # dmc.Loader(id="my_loader", variant="bars", c="red"),
             dmc.Breadcrumbs(
                 children=[
@@ -62,6 +78,10 @@ layout = dmc.AppShellHeader(
                 ],
             ),
             dmc.Container(fluid=True),
+            LOADED.make_widget(
+                dmc.Badge,
+                variant="dot",
+            ),
             # SEARCH.make_location(refresh="callback-nav"),
             # FILTERING.make_widget(
             #     dmc.Loader,
@@ -151,6 +171,7 @@ layout = dmc.AppShellHeader(
                 size=SIZE,
                 color="grey",
                 opened=True,
+                lineSize=LINE_SIZE,
             ),
         ],
         h="100%",
@@ -230,3 +251,20 @@ layout = dmc.AppShellHeader(
 #         f,
 #         request.args.get("time", ""),
 #     )
+
+
+@callback(
+    LEDGER_SLUG.output,
+    LEDGER_SLUG.make_output("data"),
+    LEDGER_SLUG.input,
+    UPDATE_INTERVAL.input,
+)
+def update_slugs(current_slug, interval):
+
+    loader = get_loader()
+    if current_slug in loader.ledgers_by_slug:
+        raise PreventUpdate()
+    else:
+        new_slug = loader.first_slug()
+
+    return new_slug, [_slug(ledger) for ledger in loader.ledgers]

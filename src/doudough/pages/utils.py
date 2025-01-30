@@ -178,8 +178,6 @@ def interval_plot(
     #             **bar_kwargs,
     #         )
     #     )
-    # print(x)
-    # print(x)
     fig.add_trace(
         go.Bar(x=x, y=y, xperiod=xperiod, xperiodalignment="middle", **bar_kwargs)
     )
