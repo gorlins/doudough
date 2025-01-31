@@ -1,6 +1,7 @@
 import dash_mantine_components as dmc
 from dash import dash_table, dcc
 from fava.util.date import Interval
+from plotly import graph_objects as go
 
 from .app_shell.controls import (
     OPERATING_CURRENCY,
@@ -13,7 +14,7 @@ from .app_shell.controls import (
     Control,
 )
 from .utils import interval_plot, treeify_accounts, yield_tree_nodes
-from ..charting import create_breakdown_chart
+from ..charting import create_breakdown_chart, create_hierarchy_sankey_data
 
 INCOME_GRAPH = GraphHelper("income_timeline")
 GRAPH_TOGGLE = Control("graph_toggle", value="net")
@@ -59,12 +60,14 @@ layout = [
                 justify="center",
                 children=[
                     dmc.TabsTab(children=v["label"], value=v["value"]) for v in views
-                ],
+                ]
+                + [dmc.TabsTab(children="Sankey", value="sankey")],
             ),
             *[
                 dmc.TabsPanel(dcc.Graph(v["value"] + "_graph"), value=v["value"])
                 for v in views
             ],
+            dmc.TabsPanel(dcc.Graph("sankey_graph"), value="sankey"),
         ],
         value=views[0]["value"],
     ),
@@ -150,19 +153,39 @@ def update_chart(currency, interval, fk):
 
 
 @filtered_callback(
+    Output("sankey_graph", "figure"),
     Output("income_graph", "figure"),
     Output("expenses_graph", component_property="figure"),
     OPERATING_CURRENCY.input,
 )
 def update_breakdowns(currency, fk):
 
-    roots = {"Income": {"invert": -1, "scale": "Blues"}, "Expenses": {"scale": "Reds"}}
+    roots = {"Income": {"scale": "Blues"}, "Expenses": {"scale": "Reds"}}
+    ledger, filtered = get_filtered_ledger(**fk)
+
+    data = {
+        root: ledger.charts.hierarchy(filtered, root, currency) for root in roots.keys()
+    }
+
+    node, link = create_hierarchy_sankey_data(
+        data["Income"], data["Expenses"], currency, max_hierarchy=3
+    )
+
+    node["align"] = "left"
+    sankey = go.Figure(
+        go.Sankey(
+            # arrangement="snap"
+            # arrangement="perpendicular",
+            node=node,
+            link=link,
+        )
+    )
     figs = [
-        create_breakdown_chart(get_hierarchy_data(currency, root, **fk), **props)
+        create_breakdown_chart(data[root], currency, **props)
         for root, props in roots.items()
     ]
 
-    return tuple(figs)
+    return sankey, *tuple(figs)
 
 
 @filtered_callback(INCOME_TABLE.output, OPERATING_CURRENCY.input)
@@ -188,7 +211,9 @@ def _update_table(currency, account_root, invert=1, **fk):
 
 def get_hierarchy_data(currency, account_root, **fk):
     ledger, filtered = get_filtered_ledger(**fk)
-    hierarchy = ledger.charts.hierarchy(filtered, account_root, currency)
+    hierarchy = ledger.charts.hierarchy(
+        filtered, account_root, currency
+    )  # need this directly for sankey
     data = [
         {
             "account": node.account,
