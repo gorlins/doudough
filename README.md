@@ -23,6 +23,10 @@ of python!
 Doudough is not yet released into pypi, so installing in editable mode
 is recommended.
 
+```bash
+uv add "doudough @ git+https://github.com/gorlins/doudough.git"
+```
+
 Pick your favorite installation method!  Doudough can be installed
 directly into an existing beancount or fava environment with `pip install`,
 or you can install into a dedicated environment using a tool like `pipx`
