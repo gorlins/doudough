@@ -144,7 +144,6 @@ def _to_hierarchy_links(
         splits = node.account.split(":")
 
         if len(splits) > max_hierarchy:
-            print(splits)
             continue
         if len(splits) == 1:
             continue
@@ -158,7 +157,6 @@ def _to_hierarchy_links(
         else:
             links.append((parent, node.account, balance))
 
-        print(links[-1])
     return links
 
 
