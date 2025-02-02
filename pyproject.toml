@@ -15,6 +15,7 @@ dependencies = [
     "dash-iconify>=0.1.2",
     "dash-mantine-components>=0.15.2",
     "fava>=1.30",
+    "networkx[default]>=3.4.2",
     "orjson>=3.10.15",
     "pandas>=2.2.3",
     "plotly[express]>=6.0.0",

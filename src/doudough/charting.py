@@ -2,6 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import List
 
+import networkx as nx
 from beancount.core.convert import get_weight
 from beancount.core.data import Transaction
 from fava.core.tree import SerialisedTreeNode
@@ -140,6 +141,9 @@ def _to_hierarchy_links(
 
     links = []
 
+    total = bp.invert * root_node.balance_children.get(currency, 0)
+    assert total >= 0
+    mn = total / 20
     for node in yield_tree_nodes(root_node):
         splits = node.account.split(":")
 
@@ -148,9 +152,9 @@ def _to_hierarchy_links(
         if len(splits) == 1:
             continue
         parent = ":".join(splits[:-1])
-        balance = bp.invert * node.balance_children.get(
-            currency, 0
-        )  # TODO: this does not sum over currencies?
+        balance = bp.invert * node.balance_children.get(currency, 0)
+        if balance < mn:
+            continue
 
         if bp.direction == 1:
             links.append((node.account, parent, balance))
@@ -173,17 +177,17 @@ def create_hierarchy_sankey_data(
     ) + _to_hierarchy_links(right, currency, max_hierarchy=max_hierarchy)
 
     # Need an approximate sorting of nodes
-    label = []
-    inflows = defaultdict(lambda: 0)
-    outflows = defaultdict(lambda: 0)
-    for s, t, v in links:
-        for n in (s, t):
-            if n not in inflows and n not in outflows:
-                # Have not yet seen this node
-                label.append(n)
-
-        outflows[s] += v
-        inflows[t] += v
+    # label = []
+    # inflows = defaultdict(lambda: 0)
+    # outflows = defaultdict(lambda: 0)
+    # for s, t, v in links:
+    #     for n in (s, t):
+    #         if n not in inflows and n not in outflows:
+    #             # Have not yet seen this node
+    #             label.append(n)
+    #
+    #     outflows[s] += v
+    #     inflows[t] += v
 
     # node_relatives = [
     #     ((inflows[n] - outflows[n]) / max(0.0001, abs(by_acct[n])), n)
@@ -201,15 +205,27 @@ def create_hierarchy_sankey_data(
 
     if tin > tout:
         links.append((left.account, net_positive, tin - tout))
-        label.append(net_positive)
+        # label.append(net_positive)
     else:
         links.append((net_negative, right.account, tout - tin))
-        label.insert(0, net_negative)
+        # label.insert(0, net_negative)
 
     links.append((left.account, right.account, min(tin, tout)))
 
     source, target, value = zip(*links)
-    label = sorted(set(source + target))
+
+    # The default layout doesn't work super well in plotly
+    # Results are better if we sort the nodes first with a good
+    # digraph algorithm
+    dag = nx.DiGraph([l[:2] for l in links])
+    # pos = nx.multipartite_layout(dag)
+    label = list(nx.topological_sort(dag))
+
+    # pos = nx.drawing.spring_layout(dag)
+    # pos = nx.drawing.arf_layout(dag)
+    # pos = nx.drawing.forceatlas2_layout(dag)
+    # label = [l[1] for l in sorted([(v[1], k) for k, v in pos.items()])]
+
     idx = {l: i for i, l in enumerate(label)}
     node = {
         "label": [l.split(":")[-1] for l in label],
