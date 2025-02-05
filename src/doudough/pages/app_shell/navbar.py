@@ -66,11 +66,12 @@ def toggle_navbar(opened, navbar):
 @callback(
     Output({"type": "navlink", "index": ALL}, "active"),
     Input("_pages_location", "pathname"),
+    LEDGER_SLUG.input,
 )
-def set_active_link(pathname):
-    # print([c["id"]["index"] for c in callback_context.outputs_list])
+def set_active_link(pathname, bfile):
     return [
-        control["id"]["index"] == pathname for control in callback_context.outputs_list
+        pathname == fill_url(control["id"]["index"], bfile=bfile)
+        for control in callback_context.outputs_list
     ]
 
 
