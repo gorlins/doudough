@@ -77,13 +77,10 @@ def set_active_link(pathname, bfile):
 
 @callback(
     Output({"type": "navlink", "index": ALL}, "href"),
-    Input("_pages_location", "pathname"),
     LEDGER_SLUG.input,
 )
-def update_navlinks(pathname, slug):
-    # print([c["id"]["index"] for c in callback_context.outputs_list])
-
+def update_navlinks(bfile):
     return [
-        fill_url(link["id"]["index"], bfile=slug)
+        fill_url(link["id"]["index"], bfile=bfile)
         for link in callback_context.outputs_list
     ]
