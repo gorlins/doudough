@@ -109,8 +109,8 @@ for module, icon in [
         lib,
         layout=getattr(imported, "layout"),
         order=order,
-        # path_template="/<bfile>/" + module,
-        path_template="/" + module,
+        path_template="/<bfile>/" + module,
+        # path_template="/" + module,
         icon=icon,
     )
 

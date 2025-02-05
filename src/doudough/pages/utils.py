@@ -197,3 +197,8 @@ def interval_plot(
     )
 
     return fig
+
+
+def fill_url(template, **params):
+    """Silly helper to substitute for flask url_for which does not work for dash pages"""
+    return template.replace("<", "{").replace(">", "}").format(**params)
