@@ -169,13 +169,13 @@ layout = dmc.AppShellHeader(
                 leftSection=DashIconify(icon="material-symbols:currency-exchange"),
                 **_FILTER_KWARGS,
             ),
-            dmc.Burger(
-                id="burger_aside",
-                size=SIZE,
-                color="grey",
-                opened=True,
-                lineSize=LINE_SIZE,
-            ),
+            # dmc.Burger(
+            #     id="burger_aside",
+            #     size=SIZE,
+            #     color="grey",
+            #     opened=True,
+            #     lineSize=LINE_SIZE,
+            # ),
         ],
         h="100%",
         px="md",
@@ -188,7 +188,7 @@ layout = dmc.AppShellHeader(
     Output(OPERATING_CURRENCY.id, "data"),
     Output(ACCOUNT.id, "data"),
     Output(FILTER.id, "data"),
-    LEDGER_SLUG.input,
+    BFILE.input,
 )
 def update_autocompletes(ledger_slug):
     ledger = get_ledger(ledger_slug)
