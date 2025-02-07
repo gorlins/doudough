@@ -6,7 +6,7 @@ from dash import callback
 from .app_shell.controls import (
     ChildrenHelper,
     get_ledger,
-    LEDGER_SLUG,
+    BFILE,
 )
 
 FOPTS_MAP = ChildrenHelper("fava_options_map_display")
@@ -21,9 +21,9 @@ layout = [
 ]
 
 
-@callback(FOPTS_MAP.output, OPTIONS_MAP.output, LEDGER_SLUG.input)
-def update_options(slug):
-    if slug:
-        ledger = get_ledger(slug)
+@callback(FOPTS_MAP.output, OPTIONS_MAP.output, BFILE.input)
+def update_options(bfile):
+    if bfile:
+        ledger = get_ledger(bfile)
         return pformat(ledger.fava_options), pformat(ledger.options)
     return "Not Loaded", "Not Loaded"

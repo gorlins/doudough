@@ -11,6 +11,7 @@ from flask import current_app
 class CallbackHelper:
     _COPY_VALS: tuple = tuple()
     MAIN_ATTRIBUTE: str = ""
+    WIDGET_CLASS: type = None
 
     def __init__(self, id, **kwargs):
         self.id = id
@@ -23,6 +24,9 @@ class CallbackHelper:
     def make_input(self, property):
         return Input(self.id, property)
 
+    def make_state(self, property):
+        return State(self.id, property)
+
     @property
     def output(self):
         return self.make_output(self.MAIN_ATTRIBUTE)
@@ -31,7 +35,15 @@ class CallbackHelper:
     def input(self):
         return self.make_input(self.MAIN_ATTRIBUTE)
 
-    def make_widget(self, widget_class, copy=None, **kwargs):
+    @property
+    def state(self):
+        return self.make_state(self.MAIN_ATTRIBUTE)
+
+    def make_widget(self, widget_class=None, copy=None, **kwargs):
+        widget_class = widget_class or self.WIDGET_CLASS
+        if widget_class is None:
+            raise TypeError("Need to specify widget_class or cls.WIDGET_CLASS")
+
         for k in copy or self._COPY_VALS:
             kwargs[k] = getattr(self, k)
         return widget_class(id=self.id, **kwargs)
@@ -53,9 +65,7 @@ class ChildrenHelper(CallbackHelper):
 
 class GraphHelper(CallbackHelper):
     MAIN_ATTRIBUTE = "figure"
-
-    def make_graph(self, **kwargs):
-        return self.make_widget(dcc.Graph, **kwargs)
+    WIDGET_CLASS = dcc.Graph
 
 
 class Control(CallbackHelper):
@@ -68,14 +78,13 @@ class LoaderHelper(CallbackHelper):
 
 
 class SearchHelper(CallbackHelper):
+    WIDGET_CLASS = dcc.Location
     MAIN_ATTRIBUTE = "search"
-
-    def make_location(self, **kwargs):
-        return self.make_widget(dcc.Location, **kwargs)
 
 
 LEDGER_LOADER: _LedgerSlugLoader = None
 LEDGER_SLUG = Control("ledger_slug")
+BFILE = LEDGER_SLUG
 OPERATING_CURRENCY = Control("operating_currency", value="USD")
 UPDATE_INTERVAL = IntervalHelper("update_interval")
 ENTRIES = Control("ledger_entries")

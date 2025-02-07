@@ -13,7 +13,7 @@ from .app_shell.controls import (
     filtered_callback,
     get_filtered_ledger,
     get_ledger,
-    LEDGER_SLUG,
+    BFILE,
 )
 
 JOURNAL_TABLE = DataHelper("journal")
@@ -70,6 +70,7 @@ code = dmc.Code(block=True)
 modal = dmc.Modal(
     title="Source View",
     id="modal-simple",
+    size="lg",
     children=[
         code,
         # dmc.Space(h=20),
@@ -146,11 +147,11 @@ layout = [
     Output(modal, "opened"),
     Output(code, "children"),
     Input(grid, "selectedRows"),
-    State(LEDGER_SLUG.id, "value"),
+    BFILE.state,
     State(modal, "opened"),
     prevent_initial_call=True,
 )
-def view_source(selection, ledger_slug, is_open):
+def view_source(selection, bfile, is_open):
 
     if not selection:
         return False, ""
@@ -158,7 +159,7 @@ def view_source(selection, ledger_slug, is_open):
     if is_open:
         return False, ""
 
-    ledger = get_ledger(ledger_slug)
+    ledger = get_ledger(bfile)
     entry = ledger.get_entry(selection[0]["id"])
     source, sha = get_entry_slice(entry)
     return True, source
