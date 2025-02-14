@@ -53,7 +53,7 @@ def create_breakdown_chart(
     currency,
     graph_type="icycle",
     scale="Blues",
-    min_fraction=0.05,
+    min_fraction=0.002,
     **kwargs,
 ):
     """Create a hierarchical breakdown chart (icycle, sunburst, etc)
@@ -80,7 +80,9 @@ def create_breakdown_chart(
 
     sd = []
     mx = max(lookup.values())
-    assert mx > 0
+    if mx < 0:
+        return graph_type()
+
     min_display = min_fraction * float(
         mx
     )  # Annoying issue multiplying float and Decimal
@@ -142,7 +144,10 @@ def _to_hierarchy_links(
     links = []
 
     total = bp.invert * root_node.balance_children.get(currency, 0)
-    assert total >= 0
+    if total < 0:
+        # TODO: better handle negative assets and positive liabilities???
+        return links
+
     mn = total / 20
     for node in yield_tree_nodes(root_node):
         splits = node.account.split(":")
@@ -153,7 +158,7 @@ def _to_hierarchy_links(
             continue
         parent = ":".join(splits[:-1])
         balance = bp.invert * node.balance_children.get(currency, 0)
-        if balance < mn:
+        if len(splits) > 2 and balance < mn:
             continue
 
         if bp.direction == 1:
@@ -172,9 +177,13 @@ def create_hierarchy_sankey_data(
     max_hierarchy=2,
 ):
 
-    links = _to_hierarchy_links(
-        left, currency, max_hierarchy=max_hierarchy
-    ) + _to_hierarchy_links(right, currency, max_hierarchy=max_hierarchy)
+    try:
+        links = _to_hierarchy_links(
+            left, currency, max_hierarchy=max_hierarchy
+        ) + _to_hierarchy_links(right, currency, max_hierarchy=max_hierarchy)
+    except AssertionError:
+        # Malformed
+        return {"label": []}, {"source": [], "target": [], "value": []}
 
     # Need an approximate sorting of nodes
     # label = []

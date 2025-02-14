@@ -9,13 +9,12 @@ from fava.util.date import Interval
 from .controls import (
     TIME_SELECTOR,
     UPDATE_INTERVAL,
+    BFILE,
     LOADED,
     INTERVAL,
     ACCOUNT,
-    OPERATING_CURRENCY,
     FILTER,
     get_loader,
-    LEDGER_SLUG,
     get_ledger,
 )
 
@@ -57,7 +56,7 @@ layout = dmc.AppShellHeader(
             #     # h=40,
             # ),
             UPDATE_INTERVAL.make_widget(dcc.Interval),
-            LEDGER_SLUG.make_widget(
+            BFILE.make_widget(
                 dmc.Select,
                 size=SIZE,
                 placeholder="Ledger File",
@@ -111,39 +110,31 @@ layout = dmc.AppShellHeader(
                 ],
                 **_FILTER_KWARGS,
             ),
-            dmc.HoverCard(
-                children=[
-                    dmc.HoverCardTarget(
-                        TIME_SELECTOR.make_widget(
-                            dmc.TextInput,
-                            w=150,
-                            placeholder="Time",
-                            leftSection=DashIconify(
-                                icon="material-symbols:calendar-month"
-                            ),
-                            **_FILTER_KWARGS,
-                        )
-                    ),
-                    # dmc.HoverCardDropdown(
-                    #     [
-                    #         dmc.MonthPickerInput(
-                    #             placeholder="Months",
-                    #             allowSingleDateInRange=True,
-                    #             type="range",
-                    #             clearable=True,
-                    #         ),
-                    #         dmc.YearPickerInput(
-                    #             leftSection=DashIconify(icon="fa:calendar"),
-                    #             # label="Year",
-                    #             placeholder="Years",
-                    #             allowSingleDateInRange=True,
-                    #             type="range",
-                    #             clearable=True,
-                    #         ),
-                    #     ]
-                    # ),
-                ]
+            TIME_SELECTOR.make_widget(
+                dmc.TextInput,
+                w=150,
+                placeholder="Time",
+                leftSection=DashIconify(icon="material-symbols:calendar-month"),
+                **_FILTER_KWARGS,
             ),
+            # dmc.HoverCardDropdown(
+            #     [
+            #         dmc.MonthPickerInput(
+            #             placeholder="Months",
+            #             allowSingleDateInRange=True,
+            #             type="range",
+            #             clearable=True,
+            #         ),
+            #         dmc.YearPickerInput(
+            #             leftSection=DashIconify(icon="fa:calendar"),
+            #             # label="Year",
+            #             placeholder="Years",
+            #             allowSingleDateInRange=True,
+            #             type="range",
+            #             clearable=True,
+            #         ),
+            #     ]
+            # ),
             ACCOUNT.make_widget(
                 dmc.Select,
                 searchable=True,
@@ -161,14 +152,6 @@ layout = dmc.AppShellHeader(
                 persistence=1,
                 size=SIZE,
             ),
-            OPERATING_CURRENCY.make_widget(
-                dmc.Select,
-                w=100,
-                clearable=False,
-                placeholder="Operating Currency",
-                leftSection=DashIconify(icon="material-symbols:currency-exchange"),
-                **_FILTER_KWARGS,
-            ),
             # dmc.Burger(
             #     id="burger_aside",
             #     size=SIZE,
@@ -184,14 +167,14 @@ layout = dmc.AppShellHeader(
 
 
 @callback(
-    OPERATING_CURRENCY.output,
-    Output(OPERATING_CURRENCY.id, "data"),
+    # CONVERSION.output,
+    # Output(CONVERSION.id, "data"),
     Output(ACCOUNT.id, "data"),
     Output(FILTER.id, "data"),
     BFILE.input,
 )
-def update_autocompletes(ledger_slug):
-    ledger = get_ledger(ledger_slug)
+def update_autocompletes(bfile):
+    ledger = get_ledger(bfile)
     ops = ledger.options["operating_currency"]
     if isinstance(ops, str):
         ops = [ops]
@@ -207,7 +190,12 @@ def update_autocompletes(ledger_slug):
     #     for acct in sorted(ledger.accounts.keys())
     # ], sorted(tags)
 
-    return ops[0], ops, sorted(ledger.accounts.keys()), sorted(tags)
+    return (
+        # DEFAULT_CONVERSIONS
+        # + [{"value": curr, "label": "Converted to {}".format(curr)} for curr in ops],
+        sorted(ledger.accounts.keys()),
+        sorted(tags),
+    )
 
 
 # @callback(SEARCH.output, TIME_SELECTOR.output, SEARCH.input, TIME_SELECTOR.input)
@@ -260,9 +248,9 @@ def update_autocompletes(ledger_slug):
 
 
 @callback(
-    LEDGER_SLUG.output,
-    LEDGER_SLUG.make_output("data"),
-    LEDGER_SLUG.input,
+    BFILE.output,
+    BFILE.make_output("data"),
+    BFILE.state,
     UPDATE_INTERVAL.input,
 )
 def first_load_metadata(current_slug, interval):

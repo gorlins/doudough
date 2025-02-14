@@ -83,7 +83,7 @@ class SearchHelper(CallbackHelper):
 
 
 LEDGER_LOADER: _LedgerSlugLoader = None
-LEDGER_SLUG = Control("ledger_slug")
+LEDGER_SLUG = Control("bfile")
 BFILE = LEDGER_SLUG
 OPERATING_CURRENCY = Control("operating_currency", value="USD")
 UPDATE_INTERVAL = IntervalHelper("update_interval")
@@ -97,10 +97,77 @@ INTERVAL = Control("interval", value=Interval.MONTH)
 ACCOUNT = Control("account")
 FILTER = Control("filter", value=[])
 TIME_SELECTOR = Control(
-    "time_selection",
+    "time",
     value="",
     # value="{} - day".format(datetime.now().year - 1),
 )
+
+
+@dataclass
+class Context:
+    """The context values for the current view
+
+    Unlike Fava, this is not used for flask.g, as Dash will serialize the context (??) and slow things down
+    """
+
+    #: Slug for the active Beancount file.
+    bfile: str = None
+
+    # Filters
+    time: str = None
+    account: str = None
+    filter: str = None
+
+    # Other
+    # interval: str = "month"
+    # conversion: str = "at_cost"
+
+    @property
+    def operating_currency(self) -> str:
+        all_oc = self.operating_currencies
+        if len(all_oc) > 1:
+            raise NotImplementedError()
+        return all_oc[0]
+
+    @property
+    def operating_currencies(self) -> list:
+        return self.ledger.options.get("operating_currency", [])
+
+    @property
+    def ledger(self) -> FavaLedger:
+        return get_ledger(self.bfile)
+
+    # @property
+    # def typed_conversion(self) -> Conversion:
+    #     """Conversion to apply (raw string)."""
+    #     return conversion_from_str(self.conversion or "at_cost")
+    #
+    # @property
+    # def typed_interval(self) -> Interval:
+    #     """Interval to group by."""
+    #     return Interval.get(self.interval)
+
+    @property
+    def filtered(self) -> FilteredLedger:
+        """The filtered ledger"""
+        if isinstance(self.filter, list):
+            f = " ".join(self.filter)
+        else:
+            f = ""
+        return self.ledger.get_filtered(account=self.account, filter=f, time=self.time)
+
+    # @classmethod
+    # def from_urlpath(cls, path, query_string: str):
+    #     if "/" in path:
+    #         splits = path.split("/", 2)
+    #         bfile = splits[1]
+    #     else:
+    #         bfile = path
+    #
+    #     if bfile.lower() == "none":
+    #         bfile = None
+    #
+    #     return cls(beancount_file_slug=bfile, rargs=parse_search(query_string))
 
 
 # @callback(
@@ -133,11 +200,78 @@ def filtered_callback(*args, **kwargs):
             "account": ACCOUNT.input,
             "filter": FILTER.input,
             "time": TIME_SELECTOR.input,
-            "slug": LEDGER_SLUG.input,
+            "bfile": BFILE.input,
         },
         # running=[(FILTERING.output, True, False)],
         **kwargs,
     )
+
+
+def ledger_callback(*args, **kwargs):
+    def decorator(func):
+        # First, wrap the function
+        @wraps(func)
+        def wrapped(*a):
+            # context = Context.from_urlpath(a[-2], a[-1])
+            context = Context(**a[-1])
+            return func(context, *a[:-1])
+
+        # Then, generate the callback
+        return callback(*args, CONTEXT.input, **kwargs)(wrapped)
+
+    return decorator
+
+
+def group_callbacks(*callbacks):
+    inputs = []
+    outputs = []
+    states = []
+    for c in callbacks:
+        if isinstance(c, Input):
+            inputs.append(c)
+        elif isinstance(c, Output):
+            outputs.append(c)
+        elif isinstance(c, State):
+            states.append(c)
+        else:
+            raise TypeError(type(c).__name__)
+    return outputs, inputs, states
+
+
+def insert_callbacks(new, original):
+    gn = group_callbacks(*new)
+    go = group_callbacks(*original)
+
+    for n, o in zip(gn, go):
+        yield from n
+        yield from o
+
+
+def filtered_ledger_callback(*args, **kwargs):
+    def decorator(func):
+        # First, wrap the function
+        @wraps(func)
+        def wrapped(bfile, account, filter, time, *a):
+            # context = Context.from_urlpath(a[-2], a[-1])
+            context = Context(bfile=bfile, account=account, filter=filter, time=time)
+            return func(context, *a)
+
+        # Then, generate the callback
+        return callback(
+            *insert_callbacks(
+                [
+                    # *args,]
+                    BFILE.input,
+                    ACCOUNT.input,
+                    FILTER.input,
+                    TIME_SELECTOR.input,
+                ],
+                args,
+            ),
+            **kwargs,
+        )(wrapped)
+
+    return decorator
 
 
 # def get_ledger():
@@ -160,8 +294,13 @@ def get_ledger(slug=None):
     return loader[slug]
 
 
+def parse_search(search: str) -> dict:
+    parsed = parse_qs(search.lstrip("?"))
+    return {k: v[0] for k, v in parsed.items()}
+
+
 def get_filtered_ledger(
-    account=None, filter=None, time=None, slug=None
+    account=None, filter=None, time=None, slug=None, **ignore
 ) -> Tuple[FavaLedger, FilteredLedger]:
     ledger = get_ledger(slug=slug)
     return ledger, ledger.get_filtered(
@@ -186,5 +325,19 @@ def default_file(func):
                 bfile = ""
 
         return func(bfile=bfile, **kwargs)
+
+    return wrapped
+
+
+def ledger_layout(func):
+    @wraps(func)
+    def wrapped(
+        bfile=None,
+        **kwargs,
+    ):
+        if bfile is None:
+            return "No ledger loaded!"
+
+        return func(ledger=get_ledger(bfile), **kwargs)
 
     return wrapped

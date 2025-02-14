@@ -113,6 +113,9 @@ def interval_plot(
     **bar_kwargs,
 ) -> go.Figure:
 
+    if not isinstance(interval, Interval):
+        interval = Interval.get(interval)
+
     match interval:
         case Interval.DAY:
             xperiod = 1000 * 60 * 60 * 24

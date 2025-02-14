@@ -27,7 +27,8 @@ from ..utils import fill_url
 #     query = ""
 
 
-def layout(**kwargs):
+def layout(bfile=None, **kwargs):
+
     return dmc.AppShellNavbar(
         id="navbar",
         children=[
@@ -52,14 +53,15 @@ def layout(**kwargs):
     )
 
 
-@callback(
-    Output("appshell", "navbar"),
-    Input("burger", "opened"),
-    State("appshell", "navbar"),
-)
-def toggle_navbar(opened, navbar):
-    navbar["collapsed"] = {"desktop": not opened}
-    return navbar
+#
+# @callback(
+#     Output("appshell", "navbar"),
+#     Input("burger", "opened"),
+#     State("appshell", "navbar"),
+# )
+# def toggle_navbar(opened, navbar):
+#     navbar["collapsed"] = {"desktop": not opened}
+#     return navbar
 
 
 # Callback (using the dcc.location provided by Dash Pages)

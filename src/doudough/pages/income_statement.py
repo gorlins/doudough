@@ -4,14 +4,12 @@ from fava.util.date import Interval
 from plotly import graph_objects as go
 
 from .app_shell.controls import (
-    OPERATING_CURRENCY,
-    INTERVAL,
     GraphHelper,
     Output,
     DataHelper,
-    filtered_callback,
-    get_filtered_ledger,
+    filtered_ledger_callback,
     Control,
+    INTERVAL,
 )
 from .utils import interval_plot, treeify_accounts, yield_tree_nodes
 from ..charting import create_breakdown_chart, create_hierarchy_sankey_data
@@ -22,29 +20,23 @@ INCOME_TABLE = DataHelper("income_table")
 EXPENSES_TABLE = DataHelper("expenses_table")
 
 
-children = []
-for table in [INCOME_TABLE, EXPENSES_TABLE]:
-    children.append(
-        dash_table.DataTable(
-            id=table.id,
-            columns=[
-                dict(id="account", name="Account"),
-                dict(
-                    id="total",
-                    name="Total",
-                    type="numeric",
-                    format=dash_table.FormatTemplate.money(2),
-                ),
-            ],
-            style_cell={"fontSize": "smaller"},
-            style_cell_conditional=[
-                {"if": {"column_id": "account"}, "textAlign": "left"}
-            ],
-            style_as_list_view=True,
-        )
+def make_table(id):
+    return dash_table.DataTable(
+        id=id,
+        columns=[
+            dict(id="account", name="Account"),
+            dict(
+                id="total",
+                name="Total",
+                type="numeric",
+                format=dash_table.FormatTemplate.money(2),
+            ),
+        ],
+        style_cell={"fontSize": "smaller"},
+        style_cell_conditional=[{"if": {"column_id": "account"}, "textAlign": "left"}],
+        style_as_list_view=True,
     )
 
-grid = dmc.SimpleGrid(cols=2, children=children)
 
 views = [
     {"value": "net", "label": "Net Profit"},
@@ -64,14 +56,20 @@ layout = [
                 + [dmc.TabsTab(children="Sankey", value="sankey")],
             ),
             *[
-                dmc.TabsPanel(dcc.Graph(v["value"] + "_graph"), value=v["value"])
+                dmc.TabsPanel(
+                    dcc.Graph(v["value"] + "_graph"),
+                    value=v["value"],
+                )
                 for v in views
             ],
             dmc.TabsPanel(dcc.Graph("sankey_graph"), value="sankey"),
         ],
         value=views[0]["value"],
     ),
-    grid,
+    dmc.SimpleGrid(
+        cols=2,
+        children=[make_table(table.id) for table in [INCOME_TABLE, EXPENSES_TABLE]],
+    ),
 ]
 
 
@@ -90,22 +88,18 @@ layout = [
 #     )
 
 
-@filtered_callback(
+@filtered_ledger_callback(
     *[
         Output("{}_graph".format(f), "figure")
         for f in ["net", "income_time", "expenses_time"]
     ],
-    OPERATING_CURRENCY.input,
     INTERVAL.input,
 )
-def update_chart(currency, interval, fk):
-
-    if not isinstance(interval, Interval):
-        interval = Interval(interval)
-
-    ledger, filtered = get_filtered_ledger(**fk)
+def update_chart(context, interval):
 
     root_accounts = ("Income", "Expenses")
+
+    interval = Interval.get(interval)
 
     # match graph_type:
     #     case "net":
@@ -117,16 +111,20 @@ def update_chart(currency, interval, fk):
     #     case _:
     #         root_accounts = graph_type.capitalize()
 
-    interval_totals = ledger.charts.interval_totals(
-        filtered, interval, root_accounts, currency, invert=True
+    interval_totals = context.ledger.charts.interval_totals(
+        context.filtered,
+        interval,
+        root_accounts,
+        context.operating_currency,
+        invert=True,
     )
 
     dates = [it.date for it in interval_totals]
-    net = [it.balance.get(currency, 0) for it in interval_totals]
+    net = [it.balance.get(context.operating_currency, 0) for it in interval_totals]
     income = [
         sum(
             [
-                i.get(currency, 0)
+                i.get(context.operating_currency, 0)
                 for acct, i in it.account_balances.items()
                 if acct.startswith("I")
             ]
@@ -136,7 +134,7 @@ def update_chart(currency, interval, fk):
     expenses = [
         sum(
             [
-                i.get(currency, 0)
+                i.get(context.operating_currency, 0)
                 for acct, i in it.account_balances.items()
                 if acct.startswith("Ex")
             ]
@@ -152,23 +150,26 @@ def update_chart(currency, interval, fk):
     )
 
 
-@filtered_callback(
+@filtered_ledger_callback(
     Output("sankey_graph", "figure"),
     Output("income_graph", "figure"),
     Output("expenses_graph", component_property="figure"),
-    OPERATING_CURRENCY.input,
+    INCOME_TABLE.output,
+    EXPENSES_TABLE.output,
 )
-def update_breakdowns(currency, fk):
+def update_breakdowns(context):
 
     roots = {"Income": {"scale": "Blues"}, "Expenses": {"scale": "Reds"}}
-    ledger, filtered = get_filtered_ledger(**fk)
 
     data = {
-        root: ledger.charts.hierarchy(filtered, root, currency) for root in roots.keys()
+        root: context.ledger.charts.hierarchy(
+            context.filtered, root, context.operating_currency
+        )
+        for root in roots.keys()
     }
 
     node, link = create_hierarchy_sankey_data(
-        data["Income"], data["Expenses"], currency, max_hierarchy=3
+        data["Income"], data["Expenses"], context.operating_currency, max_hierarchy=3
     )
 
     node["align"] = "left"
@@ -181,25 +182,20 @@ def update_breakdowns(currency, fk):
         )
     )
     figs = [
-        create_breakdown_chart(data[root], currency, **props)
+        create_breakdown_chart(data[root], context.operating_currency, **props)
         for root, props in roots.items()
     ]
 
-    return sankey, *tuple(figs)
+    return (
+        sankey,
+        *tuple(figs),
+        _update_table(context, "Income", invert=-1),
+        _update_table(context, "Expenses", invert=-1),
+    )
 
 
-@filtered_callback(INCOME_TABLE.output, OPERATING_CURRENCY.input)
-def update_income_table(currency, fk):
-    return _update_table(currency, "Income", invert=-1, **fk)
-
-
-@filtered_callback(EXPENSES_TABLE.output, OPERATING_CURRENCY.input)
-def update_expenses_table(currency, fk):
-    return _update_table(currency, "Expenses", invert=-1, **fk)
-
-
-def _update_table(currency, account_root, invert=1, **fk):
-    data = get_hierarchy_data(currency, account_root, **fk)
+def _update_table(context, account_root, invert=1):
+    data = get_hierarchy_data(context, account_root)
 
     data = [
         {"account": treeify_accounts(d["account"]), "total": invert * d["total"]}
@@ -209,15 +205,15 @@ def _update_table(currency, account_root, invert=1, **fk):
     return data
 
 
-def get_hierarchy_data(currency, account_root, **fk):
-    ledger, filtered = get_filtered_ledger(**fk)
-    hierarchy = ledger.charts.hierarchy(
-        filtered, account_root, currency
+def get_hierarchy_data(context, account_root):
+
+    hierarchy = context.ledger.charts.hierarchy(
+        context.filtered, account_root, context.operating_currency
     )  # need this directly for sankey
     data = [
         {
             "account": node.account,
-            "total": node.balance_children.get(currency, 0),
+            "total": node.balance_children.get(context.operating_currency, 0),
         }
         for node in yield_tree_nodes(hierarchy)
     ]
