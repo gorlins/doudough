@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 from functools import wraps
 from typing import Tuple
+from urllib.parse import parse_qs
 
-from dash import Input, Output, dcc, callback
+from dash import Input, Output, dcc, State, callback
 from fava.application import _LedgerSlugLoader
 from fava.core import FavaLedger, FilteredLedger
 from fava.util.date import Interval
@@ -82,17 +84,21 @@ class SearchHelper(CallbackHelper):
     MAIN_ATTRIBUTE = "search"
 
 
+class StoreHelper(CallbackHelper):
+    WIDGET_CLASS = dcc.Store
+    MAIN_ATTRIBUTE = "data"
+
+
 LEDGER_LOADER: _LedgerSlugLoader = None
 LEDGER_SLUG = Control("bfile")
 BFILE = LEDGER_SLUG
-OPERATING_CURRENCY = Control("operating_currency", value="USD")
 UPDATE_INTERVAL = IntervalHelper("update_interval")
 ENTRIES = Control("ledger_entries")
 ERRORS = Control("ledger_errors")
 OPTIONS_MAP = Control("ledger_options")
 LOADED = ChildrenHelper("ledger_loaded", children="")
 FILTERING = LoaderHelper("applying_filter")
-# SEARCH = SearchHelper("location")
+SEARCH = SearchHelper("location")
 INTERVAL = Control("interval", value=Interval.MONTH)
 ACCOUNT = Control("account")
 FILTER = Control("filter", value=[])

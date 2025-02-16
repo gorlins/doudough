@@ -10,8 +10,7 @@ from fava.core.file import get_entry_slice
 
 from .app_shell.controls import (
     DataHelper,
-    filtered_callback,
-    get_filtered_ledger,
+    filtered_ledger_callback,
     get_ledger,
     BFILE,
 )
@@ -264,7 +263,6 @@ def _to_datagrid(t: D.Directive) -> dict:
 #     grid = d
 
 
-@filtered_callback(Output(grid, "rowData"))
-def update_journal(**fk):
-    ledger, filtered = get_filtered_ledger(**fk)
-    return to_datagrid(filtered.entries)
+@filtered_ledger_callback(Output(grid, "rowData"))
+def update_journal(context):
+    return to_datagrid(context.filtered.entries)

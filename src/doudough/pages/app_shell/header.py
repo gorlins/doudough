@@ -9,6 +9,7 @@ from fava.util.date import Interval
 from .controls import (
     TIME_SELECTOR,
     UPDATE_INTERVAL,
+    SEARCH,
     BFILE,
     LOADED,
     INTERVAL,
@@ -41,20 +42,25 @@ LINE_SIZE = 2
 layout = dmc.AppShellHeader(
     dmc.Group(
         [
-            dmc.Burger(
-                id="burger",
-                size=SIZE,
-                color="green",
-                lineSize=LINE_SIZE,
-                # hiddenFrom="sm",
-                opened=True,
-            ),
-            # dmc.Avatar(
-            #     # src="https://avatars.githubusercontent.com/u/22910810?v=4", h=40
-            #     src=icon_src,
+            # dmc.Burger(
+            #     id="burger",
             #     size=SIZE,
-            #     # h=40,
+            #     color="green",
+            #     lineSize=LINE_SIZE,
+            #     # hiddenFrom="sm",
+            #     opened=True,
             # ),
+            dmc.Loader(
+                dmc.Avatar(
+                    # src="https://avatars.githubusercontent.com/u/22910810?v=4", h=40
+                    # src=icon_src,
+                    src="/assets/doudou.png",
+                    size=SIZE,
+                    # h=40,
+                ),
+                id="loader",
+                # color="green",
+            ),
             UPDATE_INTERVAL.make_widget(dcc.Interval),
             BFILE.make_widget(
                 dmc.Select,
@@ -83,13 +89,28 @@ layout = dmc.AppShellHeader(
                 dmc.Badge,
                 variant="dot",
             ),
-            # SEARCH.make_location(refresh="callback-nav"),
+            # CONTEXT.make_widget(),
+            SEARCH.make_widget(
+            SEARCH.make_widget(
+                # refresh="callback-nav",
+                refresh=False,
+            ),
             # FILTERING.make_widget(
             #     dmc.Loader,
             #     color="green",
             #     size=SIZE,
             #     # loading=False,
             #     type="bars",
+            # ),
+            # CONVERSION.make_widget(
+            #     dmc.Select,
+            #     w=100,
+            #     data=DEFAULT_CONVERSIONS,
+            #     value="at_cost",
+            #     clearable=False,
+            #     placeholder="Conversion",
+            #     leftSection=DashIconify(icon="material-symbols:currency-exchange"),
+            #     **_FILTER_KWARGS,
             # ),
             INTERVAL.make_widget(
                 # dmc.SegmentedControl,
