@@ -3,6 +3,7 @@ from functools import wraps
 from typing import Tuple
 from urllib.parse import parse_qs
 
+from beanquery.query import run_query
 from dash import Input, Output, dcc, State, callback
 from fava.application import _LedgerSlugLoader
 from fava.core import FavaLedger, FilteredLedger
@@ -174,6 +175,9 @@ class Context:
     #         bfile = None
     #
     #     return cls(beancount_file_slug=bfile, rargs=parse_search(query_string))
+
+    def filtered_query(self, query, **kwargs):
+        return run_query(self.filtered.entries, self.ledger.options, query, **kwargs)
 
 
 # @callback(

@@ -91,7 +91,6 @@ layout = dmc.AppShellHeader(
             ),
             # CONTEXT.make_widget(),
             SEARCH.make_widget(
-            SEARCH.make_widget(
                 # refresh="callback-nav",
                 refresh=False,
             ),

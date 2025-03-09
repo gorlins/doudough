@@ -99,6 +99,7 @@ for module, icon in [
     ("income_statement", "material-symbols:bar-chart" + ICON_STYLE),
     ("balance_sheet", "material-symbols:area-chart" + ICON_STYLE),
     ("journal", "material-symbols:lists" + ICON_STYLE),
+    ("payee_renamer", "material-symbols:account-balance" + ICON_STYLE),
     ("errors", "material-symbols:error" + ICON_STYLE),
     ("options", "material-symbols:settings" + ICON_STYLE),
 ]:
